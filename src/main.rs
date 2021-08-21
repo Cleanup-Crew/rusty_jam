@@ -22,8 +22,8 @@ fn main() {
 
 struct Player;
 
-#[derive(Default)]
-struct Collider {
+#[derive(Default, Copy, Clone)]
+pub struct Collider {
     size: Vec2,
     offset: Vec3,
 }
@@ -59,51 +59,94 @@ fn generate_world(
         width: 192.,
         height: 192.,
         rotation: 0.,
+        colliders: vec![
+            Collider {
+                size: Vec2::new(192., 16.),
+                offset: Vec3::new(0., -88., 0.),
+            },
+            Collider {
+                size: Vec2::new(192., 16.),
+                offset: Vec3::new(0., 88., 0.),
+            },
+            Collider {
+                size: Vec2::new(16., 64.),
+                offset: Vec3::new(-88., -48., 0.),
+            },
+            Collider {
+                size: Vec2::new(16., 64.),
+                offset: Vec3::new(-88., 48., 0.),
+            },
+            Collider {
+                size: Vec2::new(16., 64.),
+                offset: Vec3::new(88., -48., 0.),
+            },
+            Collider {
+                size: Vec2::new(16., 64.),
+                offset: Vec3::new(88., 48., 0.),
+            },
+        ],
+    };
+    let empty_room = Room {
+        asset: materials.add(asset_server.load("rooms/empty.png").into()),
+        width: 256.,
+        height: 192.,
+        rotation: 0.,
+        colliders: vec![],
     };
     let hallway_straight = Room {
         asset: materials.add(asset_server.load("rooms/hallways/straight.png").into()),
         width: 64.,
         height: 64.,
         rotation: 0.,
+        colliders: vec![],
     };
     let hallway_straight_90 = Room {
         asset: materials.add(asset_server.load("rooms/hallways/straight.png").into()),
         width: 64.,
         height: 64.,
         rotation: 0.5 * std::f32::consts::PI,
+        colliders: vec![],
     };
     let hallway_angle = Room {
         asset: materials.add(asset_server.load("rooms/hallways/angle.png").into()),
         width: 64.,
         height: 64.,
         rotation: 0.,
+        colliders: vec![],
     };
     let hallway_angle_90 = Room {
         asset: materials.add(asset_server.load("rooms/hallways/angle.png").into()),
         width: 64.,
         height: 64.,
         rotation: 0.5 * std::f32::consts::PI,
+        colliders: vec![],
     };
     let hallway_angle_180 = Room {
         asset: materials.add(asset_server.load("rooms/hallways/angle.png").into()),
         width: 64.,
         height: 64.,
         rotation: 1. * std::f32::consts::PI,
+        colliders: vec![],
     };
     let hallway_angle_270 = Room {
         asset: materials.add(asset_server.load("rooms/hallways/angle.png").into()),
         width: 64.,
         height: 64.,
         rotation: 1.5 * std::f32::consts::PI,
+        colliders: vec![],
     };
 
     security_room.spawn(&mut commands, 0., 0.);
     hallway_straight_90.spawn(&mut commands, -128., 0.);
     hallway_angle.spawn(&mut commands, -192., 0.);
+    hallway_straight.spawn(&mut commands, -192., 64.);
+    empty_room.spawn(&mut commands, -160., 192.);
 
     rooms.push(security_room);
+    rooms.push(hallway_straight);
     rooms.push(hallway_straight_90);
     rooms.push(hallway_angle);
+    rooms.push(empty_room);
 
     // desk
     commands
