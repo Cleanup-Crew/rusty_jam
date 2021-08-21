@@ -1,7 +1,7 @@
 mod room;
 use room::*;
 
-use bevy::{core::FixedTimestep, prelude::*};
+use bevy::{core::FixedTimestep, prelude::*, sprite};
 
 fn main() {
     App::new()
@@ -13,13 +13,22 @@ fn main() {
         .add_system_set(
             SystemSet::new()
                 .with_run_criteria(FixedTimestep::step(1. / 60.))
-                .with_system(move_player),
+                .with_system(move_player.before("collision"))
+                .with_system(collision.label("collision")),
         )
         .add_system(bevy::input::system::exit_on_esc_system)
         .run()
 }
 
 struct Player;
+
+#[derive(Default)]
+struct Collider {
+    size: Vec2,
+    offset: Vec3,
+}
+
+struct Nonstatic;
 
 fn setup(mut commands: Commands, mut materials: ResMut<Assets<ColorMaterial>>) {
     commands.spawn_bundle(OrthographicCameraBundle::new_2d());
@@ -30,7 +39,12 @@ fn setup(mut commands: Commands, mut materials: ResMut<Assets<ColorMaterial>>) {
             transform: Transform::from_xyz(0., 0., 1.),
             ..Default::default()
         })
-        .insert(Player);
+        .insert(Player)
+        .insert(Collider {
+            size: Vec2::new(16., 16.),
+            ..Default::default()
+        })
+        .insert(Nonstatic);
 }
 
 fn generate_world(
@@ -92,12 +106,17 @@ fn generate_world(
     rooms.push(hallway_angle);
 
     // desk
-    commands.spawn_bundle(SpriteBundle {
-        sprite: Sprite::new(Vec2::new(90., 100.)),
-        material: materials.add(asset_server.load("furniture/Security Desk.png").into()),
-        transform: Transform::from_xyz(0., 64., 0.),
-        ..Default::default()
-    });
+    commands
+        .spawn_bundle(SpriteBundle {
+            sprite: Sprite::new(Vec2::new(90., 100.)),
+            material: materials.add(asset_server.load("furniture/Security Desk.png").into()),
+            transform: Transform::from_xyz(0., 64., 0.),
+            ..Default::default()
+        })
+        .insert(Collider {
+            size: Vec2::new(90., 58.),
+            offset: Vec3::new(0., -21., 0.),
+        });
 }
 
 fn move_player(input: Res<Input<KeyCode>>, mut query: Query<&mut Transform, With<Player>>) {
@@ -114,6 +133,51 @@ fn move_player(input: Res<Input<KeyCode>>, mut query: Query<&mut Transform, With
             player.translation.x -= PLAYER_SPEED;
         } else if input.pressed(KeyCode::S) {
             player.translation.x += PLAYER_SPEED;
+        }
+    }
+}
+
+fn collision(
+    mut q0: Query<(&mut Transform, &Collider), With<Nonstatic>>,
+    q1: Query<(&Transform, &Collider), Without<Nonstatic>>,
+) {
+    use sprite::collide_aabb;
+    use sprite::collide_aabb::Collision;
+    for (mut tran, coll) in q0.iter_mut() {
+        for (static_tran, static_coll) in q1.iter() {
+            let collision = collide_aabb::collide(
+                tran.translation + coll.offset,
+                coll.size,
+                static_tran.translation + static_coll.offset,
+                static_coll.size,
+            );
+
+            if let Some(side) = collision {
+                match side {
+                    Collision::Left => {
+                        tran.translation.x = static_tran.translation.x + static_coll.offset.x
+                            - (static_coll.size.x / 2.)
+                            - (coll.size.x / 2.);
+                    }
+                    Collision::Right => {
+                        tran.translation.x = static_tran.translation.x
+                            + static_coll.offset.x
+                            + (static_coll.size.x / 2.)
+                            + (coll.size.x / 2.);
+                    }
+                    Collision::Top => {
+                        tran.translation.y = static_tran.translation.y
+                            + static_coll.offset.y
+                            + (static_coll.size.y / 2.)
+                            + (coll.size.y / 2.);
+                    }
+                    Collision::Bottom => {
+                        tran.translation.y = static_tran.translation.y + static_coll.offset.y
+                            - (static_coll.size.y / 2.)
+                            - (coll.size.y / 2.);
+                    }
+                }
+            }
         }
     }
 }
