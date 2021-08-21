@@ -1,7 +1,7 @@
 mod room;
 use room::*;
 
-use bevy::prelude::*;
+use bevy::{core::FixedTimestep, prelude::*};
 
 fn main() {
     App::new()
@@ -10,12 +10,27 @@ fn main() {
         .insert_resource(Vec::<Room>::new())
         .add_startup_system(setup)
         .add_startup_system(generate_world)
+        .add_system_set(
+            SystemSet::new()
+                .with_run_criteria(FixedTimestep::step(1. / 60.))
+                .with_system(move_player),
+        )
         .add_system(bevy::input::system::exit_on_esc_system)
         .run()
 }
 
-fn setup(mut commands: Commands) {
+struct Player;
+
+fn setup(mut commands: Commands, mut materials: ResMut<Assets<ColorMaterial>>) {
     commands.spawn_bundle(OrthographicCameraBundle::new_2d());
+    commands
+        .spawn_bundle(SpriteBundle {
+            sprite: Sprite::new(Vec2::new(16., 16.)),
+            material: materials.add(Color::GOLD.into()),
+            transform: Transform::from_xyz(0., 0., 1.),
+            ..Default::default()
+        })
+        .insert(Player);
 }
 
 fn generate_world(
@@ -83,4 +98,22 @@ fn generate_world(
         transform: Transform::from_xyz(0., 64., 0.),
         ..Default::default()
     });
+}
+
+fn move_player(input: Res<Input<KeyCode>>, mut query: Query<&mut Transform, With<Player>>) {
+    const PLAYER_SPEED: f32 = 2.;
+    if let Ok(mut player) = query.single_mut() {
+        // TODO: Normalize speed
+        if input.pressed(KeyCode::W) {
+            player.translation.y += PLAYER_SPEED;
+        } else if input.pressed(KeyCode::R) {
+            player.translation.y -= PLAYER_SPEED;
+        }
+
+        if input.pressed(KeyCode::A) {
+            player.translation.x -= PLAYER_SPEED;
+        } else if input.pressed(KeyCode::S) {
+            player.translation.x += PLAYER_SPEED;
+        }
+    }
 }
