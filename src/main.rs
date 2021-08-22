@@ -70,6 +70,14 @@ fn generate_world(
         rooms[&room_kind.0].spawn(&mut commands, room_kind.1 .0, room_kind.1 .1)
     }
 
+    for hallways in map.hallways {
+        rooms[&RoomKind::Hallway(HallwayKind::NorthSouth)].spawn(
+            &mut commands,
+            hallways.0,
+            hallways.1,
+        );
+    }
+
     // desk
     commands
         .spawn_bundle(SpriteBundle {

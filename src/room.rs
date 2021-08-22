@@ -26,12 +26,21 @@ pub enum HallwayKind {
     EastWest,
 }
 
+#[derive(Debug)]
+pub enum Direction {
+    North,
+    East,
+    South,
+    West,
+}
+
 pub struct Room {
     pub asset: Handle<ColorMaterial>,
     pub width: usize,
     pub height: usize,
     pub rotation: f32,
     pub colliders: Vec<Collider>,
+    pub doors: Vec<(usize, usize, Direction)>,
 }
 
 impl Room {
@@ -102,6 +111,7 @@ pub fn load_rooms(
                     offset: Vec3::new(88., 48., 0.),
                 },
             ],
+            doors: vec![(0, 1, Direction::West), (2, 1, Direction::East)],
         },
     );
     rooms.insert(
@@ -112,6 +122,7 @@ pub fn load_rooms(
             height: 3,
             rotation: 0.,
             colliders: vec![],
+            doors: vec![(1, 0, Direction::South), (0, 1, Direction::West)],
         },
     );
     rooms.insert(
@@ -122,6 +133,7 @@ pub fn load_rooms(
             height: 1,
             rotation: 0.,
             colliders: vec![],
+            doors: vec![],
         },
     );
     rooms.insert(
@@ -132,6 +144,7 @@ pub fn load_rooms(
             height: 1,
             rotation: 0.5 * std::f32::consts::PI,
             colliders: vec![],
+            doors: vec![],
         },
     );
     rooms.insert(
@@ -142,6 +155,7 @@ pub fn load_rooms(
             height: 1,
             rotation: 0.,
             colliders: vec![],
+            doors: vec![],
         },
     );
     rooms.insert(
@@ -152,6 +166,7 @@ pub fn load_rooms(
             height: 1,
             rotation: 0.5 * std::f32::consts::PI,
             colliders: vec![],
+            doors: vec![],
         },
     );
     rooms.insert(
@@ -162,6 +177,7 @@ pub fn load_rooms(
             height: 1,
             rotation: 1. * std::f32::consts::PI,
             colliders: vec![],
+            doors: vec![],
         },
     );
     rooms.insert(
@@ -172,6 +188,7 @@ pub fn load_rooms(
             height: 1,
             rotation: 1.5 * std::f32::consts::PI,
             colliders: vec![],
+            doors: vec![],
         },
     );
 }

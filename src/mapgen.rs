@@ -6,7 +6,7 @@ use std::collections::HashMap;
 pub struct Map {
     occupied: Vec<bool>,
     pub rooms: Vec<(RoomKind, (usize, usize))>,
-    hallways: Vec<(usize, usize)>,
+    pub hallways: Vec<(usize, usize)>,
     width: usize,
     height: usize,
 }
@@ -63,6 +63,30 @@ impl Map {
                 for x in room_x..room.width + room_x {
                     self.occupied[y * self.width + x] = true;
                 }
+            }
+        }
+
+        // place hallways
+        let doors = self
+            .rooms
+            .iter()
+            .map(|(room, (x, y))| {
+                let room = &rooms[room];
+
+                // Calculate actual door position by adding the relative position the the actual
+                // piont the room is placed at
+                room.doors
+                    .iter()
+                    .map(move |(dx, dy, dir)| (dx + x, dy + y, dir))
+            })
+            .flatten();
+
+        for (dx, dy, dir) in doors {
+            match dir {
+                crate::room::Direction::North => self.hallways.push((dx, dy + 1)),
+                crate::room::Direction::East => self.hallways.push((dx + 1, dy)),
+                crate::room::Direction::South => self.hallways.push((dx, dy - 1)),
+                crate::room::Direction::West => self.hallways.push((dx - 1, dy)),
             }
         }
     }
