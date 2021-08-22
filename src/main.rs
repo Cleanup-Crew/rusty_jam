@@ -100,9 +100,11 @@ fn move_player(input: Res<Input<KeyCode>>, mut query: Query<&mut Transform, With
     }
 }
 
+// FIXME: Assuming the nonstatic transform is relative to the reference frame may limit us in the
+// future.
 fn collision(
     mut q0: Query<(&mut Transform, &Collider), With<Nonstatic>>,
-    q1: Query<(&Transform, &Collider), Without<Nonstatic>>,
+    q1: Query<(&GlobalTransform, &Collider), Without<Nonstatic>>,
 ) {
     use sprite::collide_aabb;
     use sprite::collide_aabb::Collision;
