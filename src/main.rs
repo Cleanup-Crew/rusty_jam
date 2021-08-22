@@ -18,13 +18,15 @@ fn main() {
             SystemSet::new()
                 .with_run_criteria(FixedTimestep::step(1. / 60.))
                 .with_system(move_player.before("collision"))
-                .with_system(collision.label("collision")),
+                .with_system(collision.label("collision"))
+                .with_system(move_camera.after("collision")),
         )
         .add_system(bevy::input::system::exit_on_esc_system)
         .run()
 }
 
 struct Player;
+struct MainCamera;
 
 #[derive(Default, Copy, Clone)]
 pub struct Collider {
@@ -35,7 +37,9 @@ pub struct Collider {
 struct Nonstatic;
 
 fn setup(mut commands: Commands, mut materials: ResMut<Assets<ColorMaterial>>) {
-    commands.spawn_bundle(OrthographicCameraBundle::new_2d());
+    commands
+        .spawn_bundle(OrthographicCameraBundle::new_2d())
+        .insert(MainCamera);
     commands
         .spawn_bundle(SpriteBundle {
             sprite: Sprite::new(Vec2::new(16., 16.)),
@@ -145,4 +149,27 @@ fn collision(
             }
         }
     }
+}
+
+fn move_camera(
+    mut camera_query: Query<&mut Transform, With<MainCamera>>,
+    player_query: Query<&GlobalTransform, With<Player>>,
+) {
+    let player = match player_query.single() {
+        Ok(p) => p,
+        Err(e) => {
+            error!("Player entity not found: {}", e);
+            return;
+        }
+    };
+
+    let mut camera = match camera_query.single_mut() {
+        Ok(t) => t,
+        Err(e) => {
+            error!("Main Camera not found: {}", e);
+            return;
+        }
+    };
+
+    camera.translation = player.translation;
 }
