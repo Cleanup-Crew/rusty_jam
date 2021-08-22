@@ -2,7 +2,7 @@ use crate::Collider;
 use bevy::prelude::*;
 use std::collections::HashMap;
 
-const TILE_SIZE: f32 = 64.;
+pub const TILE_SIZE: f32 = 64.;
 
 #[derive(Eq, PartialEq, Hash)]
 pub enum RoomKind {
@@ -35,7 +35,11 @@ pub struct Room {
 }
 
 impl Room {
-    pub fn spawn(&self, commands: &mut Commands, x: f32, y: f32) {
+    pub fn spawn(&self, commands: &mut Commands, x: usize, y: usize) {
+        // convert map coord to bevy coord
+        let x = x as f32 * TILE_SIZE + self.width as f32 * TILE_SIZE / 2.;
+        let y = y as f32 * TILE_SIZE + self.height as f32 * TILE_SIZE / 2.;
+
         let mut transform = Transform::from_xyz(x, y, 0.);
         transform.rotate(Quat::from_rotation_z(self.rotation));
         let mut entity_commands = commands.spawn_bundle(SpriteBundle {
@@ -53,6 +57,7 @@ impl Room {
                 parent
                     .spawn()
                     .insert(Transform::identity())
+                    .insert(GlobalTransform::identity())
                     .insert(c.clone());
             });
         });

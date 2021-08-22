@@ -59,18 +59,16 @@ fn generate_world(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     mut materials: ResMut<Assets<ColorMaterial>>,
-    rooms: ResMut<HashMap<RoomKind, Room>>,
+    rooms: Res<HashMap<RoomKind, Room>>,
 ) {
     // Randomize map
     let mut map = Map::new(20, 20);
     map.generate(&rooms);
 
-    // Temp (pretend map.generate actually did stuff)
-    rooms[&RoomKind::Security].spawn(&mut commands, 0., 0.);
-    rooms[&RoomKind::Hallway(HallwayKind::EastWest)].spawn(&mut commands, -128., 0.);
-    rooms[&RoomKind::Hallway(HallwayKind::NorthEast)].spawn(&mut commands, -192., 0.);
-    rooms[&RoomKind::Hallway(HallwayKind::NorthSouth)].spawn(&mut commands, -192., 64.);
-    rooms[&RoomKind::Empty].spawn(&mut commands, -160., 192.);
+    // Spawn entities for map
+    for room_kind in map.rooms {
+        rooms[&room_kind.0].spawn(&mut commands, room_kind.1 .0, room_kind.1 .1)
+    }
 
     // desk
     commands
