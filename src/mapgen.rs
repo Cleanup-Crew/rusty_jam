@@ -10,7 +10,7 @@ use std::ops::{Index, IndexMut};
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 enum TileKind {
     Empty,
-    Room,
+    Room(usize),
     Door,
     Hallway,
 }
@@ -19,7 +19,7 @@ impl TileKind {
     fn connects(&self, other: TileKind) -> bool {
         match *self {
             TileKind::Empty => false,
-            TileKind::Room => other == TileKind::Room || other == TileKind::Door,
+            TileKind::Room(id) => other == TileKind::Room(id) || other == TileKind::Door,
             TileKind::Door => other != TileKind::Empty,
             TileKind::Hallway => other == TileKind::Hallway || other == TileKind::Door,
         }
@@ -123,7 +123,7 @@ impl Map {
         self.rooms.push((RoomKind::Security, (sec_x, sec_y)));
         for y in sec_y..security_room.height + sec_y {
             for x in sec_x..security_room.width + sec_x {
-                self.occupied[(x, y)] = TileKind::Room;
+                self.occupied[(x, y)] = TileKind::Room(0);
             }
         }
         for (dx, dy, _) in room_doors(security_room, sec_x, sec_y) {
@@ -137,7 +137,7 @@ impl Map {
         }
 
         // place random rooms
-        for _ in 0..8 {
+        for id in 1..=8 {
             // pick room (only one option for now)
             let room = &rooms[&RoomKind::Empty];
 
@@ -169,7 +169,7 @@ impl Map {
             self.rooms.push((RoomKind::Empty, (room_x, room_y)));
             for y in room_y..room.height + room_y {
                 for x in room_x..room.width + room_x {
-                    self.occupied[(x, y)] = TileKind::Room;
+                    self.occupied[(x, y)] = TileKind::Room(id);
                 }
             }
             for (dx, dy, _) in room_doors(room, room_x, room_y) {
@@ -233,7 +233,7 @@ impl Map {
             .into_iter()
             .map(|set| {
                 set.into_iter()
-                    .filter(|(_, _, tile)| *tile == TileKind::Door)
+                    .filter(|(_, _, tile)| *tile == TileKind::Hallway)
                     .collect::<Vec<(usize, usize, TileKind)>>()
             })
             .collect::<Vec<_>>()
