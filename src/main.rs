@@ -1,15 +1,19 @@
+mod mapgen;
 mod room;
-use room::*;
 
 use bevy::{core::FixedTimestep, prelude::*, sprite};
+use mapgen::*;
+use room::*;
+use std::collections::HashMap;
 
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .insert_resource(ClearColor(Color::BLUE))
-        .insert_resource(Vec::<Room>::new())
+        .insert_resource(HashMap::<RoomKind, Room>::new())
         .add_startup_system(setup)
-        .add_startup_system(generate_world)
+        .add_startup_system(room::load_rooms.label("load_rooms"))
+        .add_startup_system(generate_world.after("load_rooms"))
         .add_system_set(
             SystemSet::new()
                 .with_run_criteria(FixedTimestep::step(1. / 60.))
@@ -51,102 +55,18 @@ fn generate_world(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     mut materials: ResMut<Assets<ColorMaterial>>,
-    mut rooms: ResMut<Vec<Room>>,
+    rooms: ResMut<HashMap<RoomKind, Room>>,
 ) {
-    // load assets
-    let security_room = Room {
-        asset: materials.add(asset_server.load("rooms/security.png").into()),
-        width: 192.,
-        height: 192.,
-        rotation: 0.,
-        colliders: vec![
-            Collider {
-                size: Vec2::new(192., 16.),
-                offset: Vec3::new(0., -88., 0.),
-            },
-            Collider {
-                size: Vec2::new(192., 16.),
-                offset: Vec3::new(0., 88., 0.),
-            },
-            Collider {
-                size: Vec2::new(16., 64.),
-                offset: Vec3::new(-88., -48., 0.),
-            },
-            Collider {
-                size: Vec2::new(16., 64.),
-                offset: Vec3::new(-88., 48., 0.),
-            },
-            Collider {
-                size: Vec2::new(16., 64.),
-                offset: Vec3::new(88., -48., 0.),
-            },
-            Collider {
-                size: Vec2::new(16., 64.),
-                offset: Vec3::new(88., 48., 0.),
-            },
-        ],
-    };
-    let empty_room = Room {
-        asset: materials.add(asset_server.load("rooms/empty.png").into()),
-        width: 256.,
-        height: 192.,
-        rotation: 0.,
-        colliders: vec![],
-    };
-    let hallway_straight = Room {
-        asset: materials.add(asset_server.load("rooms/hallways/straight.png").into()),
-        width: 64.,
-        height: 64.,
-        rotation: 0.,
-        colliders: vec![],
-    };
-    let hallway_straight_90 = Room {
-        asset: materials.add(asset_server.load("rooms/hallways/straight.png").into()),
-        width: 64.,
-        height: 64.,
-        rotation: 0.5 * std::f32::consts::PI,
-        colliders: vec![],
-    };
-    let hallway_angle = Room {
-        asset: materials.add(asset_server.load("rooms/hallways/angle.png").into()),
-        width: 64.,
-        height: 64.,
-        rotation: 0.,
-        colliders: vec![],
-    };
-    let hallway_angle_90 = Room {
-        asset: materials.add(asset_server.load("rooms/hallways/angle.png").into()),
-        width: 64.,
-        height: 64.,
-        rotation: 0.5 * std::f32::consts::PI,
-        colliders: vec![],
-    };
-    let hallway_angle_180 = Room {
-        asset: materials.add(asset_server.load("rooms/hallways/angle.png").into()),
-        width: 64.,
-        height: 64.,
-        rotation: 1. * std::f32::consts::PI,
-        colliders: vec![],
-    };
-    let hallway_angle_270 = Room {
-        asset: materials.add(asset_server.load("rooms/hallways/angle.png").into()),
-        width: 64.,
-        height: 64.,
-        rotation: 1.5 * std::f32::consts::PI,
-        colliders: vec![],
-    };
+    // Randomize map
+    let mut map = Map::new(20, 20);
+    map.generate(&rooms);
 
-    security_room.spawn(&mut commands, 0., 0.);
-    hallway_straight_90.spawn(&mut commands, -128., 0.);
-    hallway_angle.spawn(&mut commands, -192., 0.);
-    hallway_straight.spawn(&mut commands, -192., 64.);
-    empty_room.spawn(&mut commands, -160., 192.);
-
-    rooms.push(security_room);
-    rooms.push(hallway_straight);
-    rooms.push(hallway_straight_90);
-    rooms.push(hallway_angle);
-    rooms.push(empty_room);
+    // Temp (pretend map.generate actually did stuff)
+    rooms[&RoomKind::Security].spawn(&mut commands, 0., 0.);
+    rooms[&RoomKind::Hallway(HallwayKind::EastWest)].spawn(&mut commands, -128., 0.);
+    rooms[&RoomKind::Hallway(HallwayKind::NorthEast)].spawn(&mut commands, -192., 0.);
+    rooms[&RoomKind::Hallway(HallwayKind::NorthSouth)].spawn(&mut commands, -192., 64.);
+    rooms[&RoomKind::Empty].spawn(&mut commands, -160., 192.);
 
     // desk
     commands
