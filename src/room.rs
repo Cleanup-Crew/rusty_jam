@@ -26,7 +26,7 @@ pub enum HallwayKind {
     EastWest,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum Direction {
     North,
     East,
