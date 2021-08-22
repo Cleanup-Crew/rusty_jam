@@ -90,6 +90,19 @@ fn generate_world(
             size: Vec2::new(90., 58.),
             offset: Vec3::new(0., -21., 0.),
         });
+    // doors
+    commands.spawn_bundle(SpriteBundle {
+        sprite: Sprite::new(Vec2::new(60., 80.)),
+        material: materials.add(asset_server.load("furniture/Door_open.png").into()),
+        transform: Transform::from_xyz(128., 64., 0.),
+        ..Default::default()
+    });
+    commands.spawn_bundle(SpriteBundle {
+        sprite: Sprite::new(Vec2::new(60., 80.)),
+        material: materials.add(asset_server.load("furniture/Door_closed.png").into()),
+        transform: Transform::from_xyz(192., 64., 0.),
+        ..Default::default()
+    });
 }
 
 fn move_player(input: Res<Input<KeyCode>>, mut query: Query<&mut Transform, With<Player>>) {
