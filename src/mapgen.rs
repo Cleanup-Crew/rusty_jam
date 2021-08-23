@@ -93,7 +93,11 @@ impl TileArray {
             (false, true, true, false) => EastSouth,
             (false, true, false, true) => EastWest,
             (false, false, true, true) => SouthWest,
-            _ => NorthSouth,
+            (true, false, false, false) => North,
+            (false, true, false, false) => East,
+            (false, false, true, false) => South,
+            (false, false, false, true) => West,
+            (false, false, false, false) => NorthEastSouthWest,
         }
     }
 
@@ -289,7 +293,6 @@ impl Map {
                     self.occupied
                         .get_connections(x, y, TileKind::connects_hallway_pathing)
                 },
-                // TODO: if we're at a hallway in another component we are also done
                 |&t| {
                     t == connected_hallways[1][0]
                         || (t.2 == TileKind::Hallway && !connected_hallways[0].contains(&t))
@@ -306,6 +309,41 @@ impl Map {
             }
             connected_hallways = self.connected_hallways();
         }
+
+        // connect hallways with <2 neighbors to nearest hallway
+        let mut singles = self.get_single_hallways();
+        while singles.len() > 0 {
+            let path = bfs(
+                &singles[0],
+                |&(x, y, _)| {
+                    self.occupied
+                        .get_connections(x, y, TileKind::connects_hallway_pathing)
+                },
+                |&t| t.2 == TileKind::Hallway && t != singles[0],
+            );
+
+            if let Some(path) = path {
+                for (x, y, _) in path {
+                    self.occupied[(x, y)] = TileKind::Hallway;
+                    self.hallways.push((x, y));
+                }
+            } else {
+                panic!("Unconnectable hallway in mapgen");
+            }
+            singles = self.get_single_hallways();
+        }
+    }
+
+    fn get_single_hallways(&self) -> Vec<(usize, usize, TileKind)> {
+        self.hallways
+            .iter()
+            .filter_map(|(x, y)| match self.occupied.hallway_kind(*x, *y) {
+                HallwayKind::North | HallwayKind::East | HallwayKind::South | HallwayKind::West => {
+                    Some((*x, *y, TileKind::Hallway))
+                }
+                _ => None,
+            })
+            .collect::<Vec<_>>()
     }
 
     fn connected_hallways(&self) -> Vec<Vec<(usize, usize, TileKind)>> {

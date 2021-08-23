@@ -24,6 +24,10 @@ pub enum HallwayKind {
     NorthWest,
     NorthSouth,
     EastWest,
+    North,
+    East,
+    South,
+    West,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -123,6 +127,50 @@ pub fn load_rooms(
             rotation: 0.,
             colliders: vec![],
             doors: vec![(1, 0, Direction::South), (0, 1, Direction::West)],
+        },
+    );
+    rooms.insert(
+        RoomKind::Hallway(HallwayKind::North),
+        Room {
+            asset: materials.add(asset_server.load("rooms/hallways/one.png").into()),
+            width: 1,
+            height: 1,
+            rotation: 0.,
+            colliders: vec![],
+            doors: vec![],
+        },
+    );
+    rooms.insert(
+        RoomKind::Hallway(HallwayKind::West),
+        Room {
+            asset: materials.add(asset_server.load("rooms/hallways/one.png").into()),
+            width: 1,
+            height: 1,
+            rotation: 0.5 * std::f32::consts::PI,
+            colliders: vec![],
+            doors: vec![],
+        },
+    );
+    rooms.insert(
+        RoomKind::Hallway(HallwayKind::South),
+        Room {
+            asset: materials.add(asset_server.load("rooms/hallways/one.png").into()),
+            width: 1,
+            height: 1,
+            rotation: 1. * std::f32::consts::PI,
+            colliders: vec![],
+            doors: vec![],
+        },
+    );
+    rooms.insert(
+        RoomKind::Hallway(HallwayKind::East),
+        Room {
+            asset: materials.add(asset_server.load("rooms/hallways/one.png").into()),
+            width: 1,
+            height: 1,
+            rotation: 1.5 * std::f32::consts::PI,
+            colliders: vec![],
+            doors: vec![],
         },
     );
     rooms.insert(
