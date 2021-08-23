@@ -32,6 +32,15 @@ impl TileKind {
             _ => false,
         }
     }
+
+    fn weight(&self) -> usize {
+        match *self {
+            TileKind::Empty => 100,
+            TileKind::Room(_) => 1,
+            TileKind::Door => 1,
+            TileKind::Hallway => 1,
+        }
+    }
 }
 
 pub struct TileArray {
@@ -106,7 +115,7 @@ impl TileArray {
         x: usize,
         y: usize,
         connectivity: F,
-    ) -> Vec<(usize, usize, TileKind)>
+    ) -> Vec<((usize, usize, TileKind), usize)>
     where
         F: Fn(&TileKind, &TileKind) -> bool,
     {
@@ -136,7 +145,7 @@ impl TileArray {
             .for_each(|(x, y)| {
                 let neighbor_type = self[(x, y)];
                 if connectivity(&neighbor_type, &tile) {
-                    adj.push((x, y, neighbor_type));
+                    adj.push(((x, y, neighbor_type), neighbor_type.weight()));
                 }
             });
 
@@ -287,7 +296,7 @@ impl Map {
         while connected_hallways.len() > 1 {
             //Connect set 0 and 1
 
-            let path = bfs(
+            let path = dijkstra(
                 &connected_hallways[0][0],
                 |&(x, y, _)| {
                     self.occupied
@@ -300,7 +309,7 @@ impl Map {
             );
 
             if let Some(path) = path {
-                for (x, y, _) in path {
+                for (x, y, _) in path.0 {
                     self.occupied[(x, y)] = TileKind::Hallway;
                     self.hallways.push((x, y));
                 }
@@ -313,7 +322,7 @@ impl Map {
         // connect hallways with <2 neighbors to nearest hallway
         let mut singles = self.get_single_hallways();
         while singles.len() > 0 {
-            let path = bfs(
+            let path = dijkstra(
                 &singles[0],
                 |&(x, y, _)| {
                     self.occupied
@@ -323,7 +332,7 @@ impl Map {
             );
 
             if let Some(path) = path {
-                for (x, y, _) in path {
+                for (x, y, _) in path.0 {
                     self.occupied[(x, y)] = TileKind::Hallway;
                     self.hallways.push((x, y));
                 }
@@ -353,7 +362,13 @@ impl Map {
                 .iter()
                 .filter(|&(_, _, tile)| tile != TileKind::Empty)
                 .collect::<Vec<_>>(),
-            |&(x, y, _)| self.occupied.get_connections(x, y, TileKind::connects),
+            |&(x, y, _)| {
+                self.occupied
+                    .get_connections(x, y, TileKind::connects)
+                    .iter()
+                    .map(|(a, _)| *a)
+                    .collect::<Vec<_>>()
+            },
         );
 
         // filter for Hallways
