@@ -159,7 +159,7 @@ pub fn load_rooms(
         },
     );
     rooms.insert(
-        RoomKind::Hallway(HallwayKind::EastSouth),
+        RoomKind::Hallway(HallwayKind::NorthWest),
         Room {
             asset: materials.add(asset_server.load("rooms/hallways/angle.png").into()),
             width: 1,
@@ -181,12 +181,67 @@ pub fn load_rooms(
         },
     );
     rooms.insert(
-        RoomKind::Hallway(HallwayKind::NorthWest),
+        RoomKind::Hallway(HallwayKind::EastSouth),
         Room {
             asset: materials.add(asset_server.load("rooms/hallways/angle.png").into()),
             width: 1,
             height: 1,
             rotation: 1.5 * std::f32::consts::PI,
+            colliders: vec![],
+            doors: vec![],
+        },
+    );
+    rooms.insert(
+        RoomKind::Hallway(HallwayKind::NorthEastWest),
+        Room {
+            asset: materials.add(asset_server.load("rooms/hallways/tee.png").into()),
+            width: 1,
+            height: 1,
+            rotation: 0.,
+            colliders: vec![],
+            doors: vec![],
+        },
+    );
+    rooms.insert(
+        RoomKind::Hallway(HallwayKind::NorthSouthWest),
+        Room {
+            asset: materials.add(asset_server.load("rooms/hallways/tee.png").into()),
+            width: 1,
+            height: 1,
+            rotation: 0.5 * std::f32::consts::PI,
+            colliders: vec![],
+            doors: vec![],
+        },
+    );
+    rooms.insert(
+        RoomKind::Hallway(HallwayKind::EastSouthWest),
+        Room {
+            asset: materials.add(asset_server.load("rooms/hallways/tee.png").into()),
+            width: 1,
+            height: 1,
+            rotation: 1.0 * std::f32::consts::PI,
+            colliders: vec![],
+            doors: vec![],
+        },
+    );
+    rooms.insert(
+        RoomKind::Hallway(HallwayKind::NorthEastSouth),
+        Room {
+            asset: materials.add(asset_server.load("rooms/hallways/tee.png").into()),
+            width: 1,
+            height: 1,
+            rotation: 1.5 * std::f32::consts::PI,
+            colliders: vec![],
+            doors: vec![],
+        },
+    );
+    rooms.insert(
+        RoomKind::Hallway(HallwayKind::NorthEastSouthWest),
+        Room {
+            asset: materials.add(asset_server.load("rooms/hallways/four.png").into()),
+            width: 1,
+            height: 1,
+            rotation: 0.,
             colliders: vec![],
             doors: vec![],
         },

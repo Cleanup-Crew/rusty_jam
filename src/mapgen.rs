@@ -8,7 +8,7 @@ use std::fmt::Formatter;
 use std::ops::{Index, IndexMut};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-enum TileKind {
+pub enum TileKind {
     Empty,
     Room(usize),
     Door,
@@ -16,17 +16,25 @@ enum TileKind {
 }
 
 impl TileKind {
-    fn connects(&self, other: TileKind) -> bool {
+    fn connects(&self, other: &TileKind) -> bool {
         match *self {
             TileKind::Empty => false,
-            TileKind::Room(id) => other == TileKind::Room(id) || other == TileKind::Door,
-            TileKind::Door => other != TileKind::Empty,
-            TileKind::Hallway => other == TileKind::Hallway || other == TileKind::Door,
+            TileKind::Room(id) => *other == TileKind::Room(id) || *other == TileKind::Door,
+            TileKind::Door => *other != TileKind::Empty,
+            TileKind::Hallway => *other == TileKind::Hallway || *other == TileKind::Door,
+        }
+    }
+
+    fn connects_hallway_pathing(&self, other: &TileKind) -> bool {
+        match *self {
+            TileKind::Empty => true,
+            TileKind::Hallway => *other == TileKind::Hallway || *other == TileKind::Empty,
+            _ => false,
         }
     }
 }
 
-struct TileArray {
+pub struct TileArray {
     inner: Vec<TileKind>,
     width: usize,
     height: usize,
@@ -46,6 +54,90 @@ impl TileArray {
             .iter()
             .enumerate()
             .map(move |(i, &tile)| (i % self.width, i / self.width, tile))
+    }
+
+    pub fn hallway_kind(&self, x: usize, y: usize) -> HallwayKind {
+        // Choose cardinal neighbors that aren't out of bounds
+        let neighbors = vec![
+            (Some(x), Some(y + 1)),
+            (Some(x + 1), Some(y)),
+            (Some(x), y.checked_sub(1)),
+            (x.checked_sub(1), Some(y)),
+        ]
+        .into_iter()
+        .map(|(x, y)| {
+            if let Some(x) = x {
+                if let Some(y) = y {
+                    if x < self.width && y < self.height {
+                        if self[(x, y)] == TileKind::Hallway || self[(x, y)] == TileKind::Door {
+                            return true;
+                        }
+                    }
+                }
+            }
+            false
+        })
+        .collect::<Vec<_>>();
+
+        // (North, East, South, West)
+        use HallwayKind::*;
+        match (neighbors[0], neighbors[1], neighbors[2], neighbors[3]) {
+            (true, true, true, true) => NorthEastSouthWest,
+            (true, true, true, false) => NorthEastSouth,
+            (true, true, false, true) => NorthEastWest,
+            (true, false, true, true) => NorthSouthWest,
+            (false, true, true, true) => EastSouthWest,
+            (true, true, false, false) => NorthEast,
+            (true, false, true, false) => NorthSouth,
+            (true, false, false, true) => NorthWest,
+            (false, true, true, false) => EastSouth,
+            (false, true, false, true) => EastWest,
+            (false, false, true, true) => SouthWest,
+            _ => NorthSouth,
+        }
+    }
+
+    fn get_connections<F>(
+        &self,
+        x: usize,
+        y: usize,
+        connectivity: F,
+    ) -> Vec<(usize, usize, TileKind)>
+    where
+        F: Fn(&TileKind, &TileKind) -> bool,
+    {
+        {
+            let tile = self[(x, y)];
+            let mut adj = Vec::with_capacity(4);
+
+            // Choose cardinal neighbors that aren't out of bounds
+            vec![
+                (x.checked_sub(1), Some(y)),
+                (Some(x + 1), Some(y)),
+                (Some(x), y.checked_sub(1)),
+                (Some(x), Some(y + 1)),
+            ]
+            .into_iter()
+            .filter_map(|(x, y)| {
+                if let Some(x) = x {
+                    if let Some(y) = y {
+                        if x < self.width && y < self.height {
+                            return Some((x, y));
+                        }
+                    }
+                }
+                None
+            })
+            // Check for connectivity to neighbors
+            .for_each(|(x, y)| {
+                let neighbor_type = self[(x, y)];
+                if connectivity(&neighbor_type, &tile) {
+                    adj.push((x, y, neighbor_type));
+                }
+            });
+
+            adj
+        }
     }
 }
 
@@ -92,7 +184,7 @@ impl IndexMut<(usize, usize)> for TileArray {
     }
 }
 pub struct Map {
-    occupied: TileArray,
+    pub occupied: TileArray,
     pub rooms: Vec<(RoomKind, (usize, usize))>,
     pub hallways: Vec<(usize, usize)>,
     width: usize,
@@ -186,8 +278,30 @@ impl Map {
         // 1. determine connectivity and create sets
         // 2. connect unconnected sets, thus merging them
         // 3. profit
-        let connected_hallways = self.connected_hallways();
-        bevy::prelude::info!("{:#?}", connected_hallways);
+        let mut connected_hallways = self.connected_hallways();
+
+        while connected_hallways.len() > 1 {
+            //Connect set 0 and 1
+
+            let path = bfs(
+                &connected_hallways[0][0],
+                |&(x, y, _)| {
+                    self.occupied
+                        .get_connections(x, y, TileKind::connects_hallway_pathing)
+                },
+                |&t| t == connected_hallways[1][0],
+            );
+
+            if let Some(path) = path {
+                for (x, y, _) in path {
+                    self.occupied[(x, y)] = TileKind::Hallway;
+                    self.hallways.push((x, y));
+                }
+            } else {
+                panic!("Unconnectable hallway in mapgen");
+            }
+            connected_hallways = self.connected_hallways();
+        }
     }
 
     fn connected_hallways(&self) -> Vec<Vec<(usize, usize, TileKind)>> {
@@ -197,38 +311,10 @@ impl Map {
                 .iter()
                 .filter(|&(_, _, tile)| tile != TileKind::Empty)
                 .collect::<Vec<_>>(),
-            |&(node_x, node_y, tile)| {
-                let mut adj = Vec::with_capacity(4);
-
-                // it's not right
-                vec![
-                    (node_x.checked_sub(1), Some(node_y)),
-                    (Some(node_x + 1), Some(node_y)),
-                    (Some(node_x), node_y.checked_sub(1)),
-                    (Some(node_x), Some(node_y + 1)),
-                ]
-                .into_iter()
-                .filter_map(|(x, y)| {
-                    if let Some(x) = x {
-                        if let Some(y) = y {
-                            if x < self.width && y < self.height {
-                                return Some((x, y));
-                            }
-                        }
-                    }
-                    None
-                })
-                .for_each(|(x, y)| {
-                    let neighbor_type = self.occupied[(x, y)];
-                    if neighbor_type.connects(tile) {
-                        adj.push((x, y, neighbor_type));
-                    }
-                });
-
-                adj
-            },
+            |&(x, y, _)| self.occupied.get_connections(x, y, TileKind::connects),
         );
 
+        // filter for Hallways
         components
             .into_iter()
             .map(|set| {

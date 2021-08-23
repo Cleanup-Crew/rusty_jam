@@ -70,11 +70,11 @@ fn generate_world(
         rooms[&room_kind.0].spawn(&mut commands, room_kind.1 .0, room_kind.1 .1)
     }
 
-    for hallways in map.hallways {
-        rooms[&RoomKind::Hallway(HallwayKind::NorthSouth)].spawn(
+    for (hallway_x, hallway_y) in map.hallways {
+        rooms[&RoomKind::Hallway(map.occupied.hallway_kind(hallway_x, hallway_y))].spawn(
             &mut commands,
-            hallways.0,
-            hallways.1,
+            hallway_x,
+            hallway_y,
         );
     }
 
