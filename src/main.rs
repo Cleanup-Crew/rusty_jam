@@ -34,6 +34,15 @@ pub struct Collider {
     offset: Vec3,
 }
 
+impl Collider {
+    pub fn new(size: Vec2, offset: Vec2) -> Self {
+        Self {
+            size,
+            offset: (offset, 0.).into(),
+        }
+    }
+}
+
 struct Nonstatic;
 
 fn setup(mut commands: Commands, mut materials: ResMut<Assets<ColorMaterial>>) {
@@ -44,7 +53,7 @@ fn setup(mut commands: Commands, mut materials: ResMut<Assets<ColorMaterial>>) {
         .spawn_bundle(SpriteBundle {
             sprite: Sprite::new(Vec2::new(16., 16.)),
             material: materials.add(Color::GOLD.into()),
-            transform: Transform::from_xyz(0., 0., 1.),
+            transform: Transform::from_xyz(10. * TILE_SIZE, 10. * TILE_SIZE, 1.),
             ..Default::default()
         })
         .insert(Player)

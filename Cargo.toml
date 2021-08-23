@@ -8,4 +8,6 @@ edition = "2018"
 [dependencies]
 bevy = {git = "https://github.com/bevyengine/bevy", rev = "62e4e59a", features=["dynamic"]}
 rand = "0.8"
-pathfinding = "2.2.1"
+pathfinding = "2.2"
+ncollide2d = "0.32"
+itertools = "0.10"
