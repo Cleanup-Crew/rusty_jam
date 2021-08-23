@@ -289,7 +289,11 @@ impl Map {
                     self.occupied
                         .get_connections(x, y, TileKind::connects_hallway_pathing)
                 },
-                |&t| t == connected_hallways[1][0],
+                // TODO: if we're at a hallway in another component we are also done
+                |&t| {
+                    t == connected_hallways[1][0]
+                        || (t.2 == TileKind::Hallway && !connected_hallways[0].contains(&t))
+                },
             );
 
             if let Some(path) = path {
